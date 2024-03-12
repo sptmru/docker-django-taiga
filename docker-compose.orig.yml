@@ -1,0 +1,80 @@
+version: '3.7'
+
+
+services:
+
+  genesis_backend:
+    # Берем Dockerfile из каталога app
+    build: ./Genesis
+    image: genesis_backend
+    restart: always
+
+    # Запускаем сервер gunicorn
+    command: gunicorn GENESIS.wsgi:application -w 24 --bind 0.0.0.0:8000
+
+
+#    # Открываем порт 8000 снаружи
+
+    expose:
+      - 8000 
+   # Подключаем статические и медиа файлы
+    volumes:
+      - ./Genesis:/home/Project
+      - ./auth_migrations:/usr/local/lib/python3.10/site-packages/django/contrib/auth/migrations      
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    env_file:
+      - ./.env    
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - dev
+      
+  nginx:
+    build: ./nginx
+    image: nginx
+    restart: always
+    ports:
+#     - 80:80
+     - "80"
+    depends_on:
+     - genesis_backend
+    # Подключаем статические и медиа файлы
+    volumes:
+      - ./Genesis/static:/home/Project/static/
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+#      - media_volume:/home/app/web/media
+    networks:
+      - dev
+
+  db_posgres:
+    image: postgres:14.0-alpine
+    restart: always
+    env_file:
+      - ./.env     
+    # Внешний том(volume) и место где он будет подключен внутри контейнера
+    volumes:
+      - .:/home/Project/postgresql/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - dev
+
+
+
+
+#volumes:
+#  postgres_volume:
+#  static_volume:
+#  media_volume:
+
+# Переопределяем параметры сети для исключения конфликта по адресам с SAP API
+networks:
+   dev:
+#        driver: bridge
+#        ipam:
+#            config:
+#                - subnet: 172.18.0.0/16
+#                  gateway: 172.18.0.1
+
