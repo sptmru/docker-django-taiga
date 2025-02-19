@@ -1,0 +1,45 @@
+version: "3.5"
+
+x-environment: &default-back-environment
+  # These environment variables will be used by taiga-back and taiga-async.
+  # Database settings
+  POSTGRES_DB: "taiga"
+  POSTGRES_USER: "${TAIGA_POSTGRES_USER}"
+  POSTGRES_PASSWORD: "${TAIGA_POSTGRES_PASSWORD}"
+  POSTGRES_HOST: "taiga-db"
+  # Taiga settingsHUU
+  TAIGA_SECRET_KEY: "${TAIGA_SECRET_KEY}"
+  TAIGA_SITES_SCHEME: "${TAIGA_SCHEME}"
+  TAIGA_SITES_DOMAIN: "${TAIGA_DOMAIN}"
+  TAIGA_SUBPATH: "${TAIGA_SUBPATH}"
+  # Email settings.
+  EMAIL_BACKEND: "django.core.mail.backends.${TAIGA_EMAIL_BACKEND}.EmailBackend"
+  DEFAULT_FROM_EMAIL: "${TAIGA_EMAIL_DEFAULT_FROM}"
+  EMAIL_USE_TLS: "${TAIGA_EMAIL_USE_TLS}"
+  EMAIL_USE_SSL: "${TAIGA_EMAIL_USE_SSL}"
+  EMAIL_HOST: "${TAIGA_EMAIL_HOST}"
+  EMAIL_PORT: "${TAIGA_EMAIL_PORT}"
+  EMAIL_HOST_USER: "${TAIGA_EMAIL_HOST_USER}"
+  EMAIL_HOST_PASSWORD: "${TAIGA_EMAIL_HOST_PASSWORD}"
+  # Rabbitmq settings
+  RABBITMQ_USER: "${TAIGA_RABBITMQ_USER}"
+  RABBITMQ_PASS: "${TAIGA_RABBITMQ_PASS}"
+  # Telemetry settings
+  ENABLE_TELEMETRY: "${TAIGA_ENABLE_TELEMETRY}"
+  # ...your customizations go here
+
+x-volumes: &default-back-volumes
+  - taiga-static-data:/taiga-back/static
+  - taiga-media-data:/taiga-back/media
+  # - ./config.py:/taiga-back/settings/config.py
+
+services:
+  taiga-manage:
+    image: taigaio/taiga-back:latest
+    environment: *default-back-environment
+    depends_on:
+      - taiga-db
+    entrypoint: "python manage.py"
+    volumes: *default-back-volumes
+    networks:
+      - taiga
